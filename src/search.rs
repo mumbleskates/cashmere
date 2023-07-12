@@ -206,7 +206,7 @@ where
         SearchChildren(
             this.total_cmp(visiting),
             match self.heap {
-                VecOrHeap::Vec(ref vec) => Both,
+                VecOrHeap::Vec(_) => Both,
                 VecOrHeap::Heap(ref heap) => {
                     // SAFETY: we never have an empty heap.
                     if Metric::axial_distance(this, visiting, dim)
