@@ -7,14 +7,35 @@ use num_traits::{AsPrimitive, Float};
 
 use crate::node::ValueStatistic;
 
+pub trait KdOrd {
+    fn kd_cmp(&self, other: &Self) -> Ordering;
+}
+
+impl KdOrd for f32 {
+    fn kd_cmp(&self, other: &Self) -> Ordering {
+        self.total_cmp(other)
+    }
+}
+
+impl KdOrd for f64 {
+    fn kd_cmp(&self, other: &Self) -> Ordering {
+        self.total_cmp(other)
+    }
+}
+
+// TODO(widders): bunch more of these for standard types
+// TODO(widders): ez wrapper for anything that's Ord, use it below with the Axis enums
+
+// TODO(widders): relax Ord for KdValue overall
 pub trait KdValue: Ord {
     const DIMS: usize;
-    type Dimension: Ord + Clone;
+    type Dimension: KdOrd + Clone;
     type ReturnedDimension<'a>: Borrow<Self::Dimension>
     where
         Self: 'a;
 
     fn get_dimension(&self, dim: usize) -> Self::ReturnedDimension<'_>;
+    // fn cmp_dimension(a: &Self::Dimension, b: &Self::Dimension) -> Ordering;
 }
 
 pub(crate) trait CycleDim {
