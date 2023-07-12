@@ -10,9 +10,6 @@ use std::mem::{replace, swap};
 use std::ops::{Deref, DerefMut};
 use std::ptr::null_mut;
 
-use widders::types::CountedIter;
-pub use widders::types::Ratio;
-
 #[cfg(feature = "full_validation")]
 use crate::node::{validate_tree, MutableBinaryNode, ViewingBinaryTreeIter};
 use crate::node::{
@@ -20,10 +17,13 @@ use crate::node::{
     Ownable, Parent, ScapegoatKdNode, Statistic, Tree, TreeHeightBound, Value, WithHeight,
 };
 use crate::search::{AdhocKdSearcher, KdSearchable, KdSearcher};
+use crate::types::CountedIter;
+pub use crate::types::{Ratio, RatioT};
 use crate::value::{KdValue, KdValuePlus, ValueStatisticPlus};
 
 mod node;
 pub mod search;
+pub(crate) mod types;
 pub mod value;
 
 struct NewKdInsert<'a, V, Node> {

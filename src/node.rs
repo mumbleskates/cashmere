@@ -6,8 +6,6 @@ use std::mem::swap;
 use std::ops::{Deref, DerefMut};
 use std::ptr::null_mut;
 
-use widders::types::RatioT;
-
 use crate::node::ScapegoatChangeOutcome::{Balanced, Rebuilding};
 use crate::node::ScapegoatPop::{Popped, RemoveThis};
 use crate::node::StatUpdate::{NoChange, Updated};
@@ -15,6 +13,7 @@ use crate::search::KdSearchGuide::{SearchChildren, Skip};
 use crate::search::OnlyOrBoth::{Both, Only};
 use crate::search::{KdSearchable, KdSearcher, StopSearch};
 use crate::value::{CycleDim, KdValue, TotalOrd};
+use crate::RatioT;
 
 pub trait TreeHeightBound: Default + Copy {
     /// Entry point to validate that the type does not place an impossible constraint on the tree's
