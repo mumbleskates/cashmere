@@ -22,6 +22,30 @@ impl<T: TotalOrd> TotalOrd for &T {
     }
 }
 
+impl<V: TotalOrd, const N: usize> TotalOrd for [V; N] {
+    fn total_eq(&self, other: &Self) -> bool {
+        self.iter().zip(other).all(|(a, b)| a.total_eq(b))
+    }
+
+    fn total_cmp(&self, other: &Self) -> Ordering {
+        self.iter()
+            .map(ByTotalOrd)
+            .cmp(other.iter().map(ByTotalOrd))
+    }
+}
+
+impl<V: TotalOrd> TotalOrd for [V] {
+    fn total_eq(&self, other: &Self) -> bool {
+        self.len() == other.len() && self.iter().zip(other).all(|(a, b)| a.total_eq(b))
+    }
+
+    fn total_cmp(&self, other: &Self) -> Ordering {
+        self.iter()
+            .map(ByTotalOrd)
+            .cmp(other.iter().map(ByTotalOrd))
+    }
+}
+
 impl TotalOrd for f32 {
     fn total_eq(&self, other: &Self) -> bool {
         self.to_bits() == other.to_bits()
@@ -70,6 +94,7 @@ define_total_ord!(char);
 define_total_ord!(bool);
 
 define_total_ord!(str);
+define_total_ord!(String);
 
 define_total_ord!(std::time::Duration);
 define_total_ord!(std::time::Instant);
@@ -102,7 +127,10 @@ impl<T: TotalOrd> Ord for ByTotalOrd<T> {
 // TODO(widders): relax TotalOrd for KdValue? or keep it because it gives equality?
 pub trait KdValue: TotalOrd {
     const DIMS: usize;
-    type Dimension: TotalOrd + Clone;
+    type Dimension: Clone + TotalOrd;
+    // TODO(widders): TotalOrd + ToOwned<Self::Dimension> & Self::Dimension: Borrow<this one>?
+    //  it should be possible to compare via a ref & discriminant instead of cloning eagerly (so we
+    //  can use AxisN<&'a A, &'a B, ...>)
     type ReturnedDimension<'a>: Borrow<Self::Dimension>
     where
         Self: 'a;
@@ -125,19 +153,7 @@ impl<V: KdValue> CycleDim for V {
     }
 }
 
-impl<V: TotalOrd + Clone, const N: usize> TotalOrd for [V; N] {
-    fn total_eq(&self, other: &Self) -> bool {
-        self.iter().zip(other).all(|(a, b)| a.total_eq(b))
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.iter()
-            .map(|a| ByTotalOrd(a))
-            .cmp(other.iter().map(|b| ByTotalOrd(b)))
-    }
-}
-
-impl<V: TotalOrd + Clone, const N: usize> KdValue for [V; N] {
+impl<V: Clone + TotalOrd, const N: usize> KdValue for [V; N] {
     const DIMS: usize = N;
     type Dimension = V;
     type ReturnedDimension<'a> = V
@@ -151,19 +167,15 @@ impl<V: TotalOrd + Clone, const N: usize> KdValue for [V; N] {
 }
 
 #[derive(Clone, Debug)]
-pub enum Axis2<A, B>
-where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-{
+pub enum Axis2<A, B> {
     A(A),
     B(B),
 }
 
 impl<A, B> TotalOrd for Axis2<A, B>
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
+    A: TotalOrd,
+    B: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -183,12 +195,7 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub enum Axis3<A, B, C>
-where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-{
+pub enum Axis3<A, B, C> {
     A(A),
     B(B),
     C(C),
@@ -196,9 +203,9 @@ where
 
 impl<A, B, C> TotalOrd for Axis3<A, B, C>
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -220,13 +227,7 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub enum Axis4<A, B, C, D>
-where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
-{
+pub enum Axis4<A, B, C, D> {
     A(A),
     B(B),
     C(C),
@@ -235,10 +236,10 @@ where
 
 impl<A, B, C, D> TotalOrd for Axis4<A, B, C, D>
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
+    D: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -262,14 +263,7 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub enum Axis5<A, B, C, D, E>
-where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
-    E: TotalOrd + Clone,
-{
+pub enum Axis5<A, B, C, D, E> {
     A(A),
     B(B),
     C(C),
@@ -278,11 +272,11 @@ where
 }
 impl<A, B, C, D, E> TotalOrd for Axis5<A, B, C, D, E>
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
-    E: TotalOrd + Clone,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
+    D: TotalOrd,
+    E: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -308,15 +302,7 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub enum Axis6<A, B, C, D, E, F>
-where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
-    E: TotalOrd + Clone,
-    F: TotalOrd + Clone,
-{
+pub enum Axis6<A, B, C, D, E, F> {
     A(A),
     B(B),
     C(C),
@@ -327,12 +313,12 @@ where
 
 impl<A, B, C, D, E, F> TotalOrd for Axis6<A, B, C, D, E, F>
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
-    E: TotalOrd + Clone,
-    F: TotalOrd + Clone,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
+    D: TotalOrd,
+    E: TotalOrd,
+    F: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -361,8 +347,8 @@ where
 
 impl<A, B> TotalOrd for (A, B)
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
+    A: TotalOrd,
+    B: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         self.0.total_eq(&other.0) && self.1.total_eq(&other.1)
@@ -377,8 +363,8 @@ where
 
 impl<A, B> KdValue for (A, B)
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
+    A: Clone + TotalOrd,
+    B: Clone + TotalOrd,
 {
     const DIMS: usize = 2;
     type Dimension = Axis2<A, B>;
@@ -398,9 +384,9 @@ where
 
 impl<A, B, C> TotalOrd for (A, B, C)
 where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         self.0.total_eq(&other.0) && self.1.total_eq(&other.1) && self.2.total_eq(&other.2)
@@ -416,9 +402,9 @@ where
 
 impl<A, B, C> KdValue for (A, B, C)
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
+    A: Clone + TotalOrd,
+    B: Clone + TotalOrd,
+    C: Clone + TotalOrd,
 {
     const DIMS: usize = 3;
     type Dimension = Axis3<A, B, C>;
@@ -439,10 +425,10 @@ where
 
 impl<A, B, C, D> TotalOrd for (A, B, C, D)
 where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
-    D: Clone + TotalOrd,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
+    D: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         self.0.total_eq(&other.0)
@@ -462,10 +448,10 @@ where
 
 impl<A, B, C, D> KdValue for (A, B, C, D)
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
+    A: Clone + TotalOrd,
+    B: Clone + TotalOrd,
+    C: Clone + TotalOrd,
+    D: Clone + TotalOrd,
 {
     const DIMS: usize = 4;
     type Dimension = Axis4<A, B, C, D>;
@@ -487,11 +473,11 @@ where
 
 impl<A, B, C, D, E> TotalOrd for (A, B, C, D, E)
 where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
-    D: Clone + TotalOrd,
-    E: Clone + TotalOrd,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
+    D: TotalOrd,
+    E: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         self.0.total_eq(&other.0)
@@ -513,11 +499,11 @@ where
 
 impl<A, B, C, D, E> KdValue for (A, B, C, D, E)
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
-    E: TotalOrd + Clone,
+    A: Clone + TotalOrd,
+    B: Clone + TotalOrd,
+    C: Clone + TotalOrd,
+    D: Clone + TotalOrd,
+    E: Clone + TotalOrd,
 {
     const DIMS: usize = 5;
     type Dimension = Axis5<A, B, C, D, E>;
@@ -540,12 +526,12 @@ where
 
 impl<A, B, C, D, E, F> TotalOrd for (A, B, C, D, E, F)
 where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
-    D: Clone + TotalOrd,
-    E: Clone + TotalOrd,
-    F: Clone + TotalOrd,
+    A: TotalOrd,
+    B: TotalOrd,
+    C: TotalOrd,
+    D: TotalOrd,
+    E: TotalOrd,
+    F: TotalOrd,
 {
     fn total_eq(&self, other: &Self) -> bool {
         self.0.total_eq(&other.0)
@@ -569,12 +555,12 @@ where
 
 impl<A, B, C, D, E, F> KdValue for (A, B, C, D, E, F)
 where
-    A: TotalOrd + Clone,
-    B: TotalOrd + Clone,
-    C: TotalOrd + Clone,
-    D: TotalOrd + Clone,
-    E: TotalOrd + Clone,
-    F: TotalOrd + Clone,
+    A: Clone + TotalOrd,
+    B: Clone + TotalOrd,
+    C: Clone + TotalOrd,
+    D: Clone + TotalOrd,
+    E: Clone + TotalOrd,
+    F: Clone + TotalOrd,
 {
     const DIMS: usize = 6;
     type Dimension = Axis6<A, B, C, D, E, F>;
