@@ -6,7 +6,7 @@ use std::mem;
 
 use crate::search::KdSearchGuide::SearchChildren;
 use crate::search::OnlyOrBoth::{Both, Only};
-use crate::value::{KdValue, KdValueMetric};
+use crate::value::{ByTotalOrd, KdValue, KdValueMetric, TotalOrd};
 
 pub enum OnlyOrBoth {
     Only,
@@ -89,27 +89,17 @@ pub struct NearValue<Value: KdValue, Metric> {
     pub value: Value,
 }
 
-impl<Value: KdValue, Metric: KdValueMetric<Value>> Eq for NearValue<Value, Metric> {}
+impl<Value: KdValue, Metric: KdValueMetric<Value>> TotalOrd for NearValue<Value, Metric> {
+    fn total_eq(&self, other: &Self) -> bool {
+        self.metric.total_eq(&other.metric)
+    }
 
-impl<Value: KdValue, Metric: KdValueMetric<Value>> PartialEq<Self> for NearValue<Value, Metric> {
-    fn eq(&self, other: &Self) -> bool {
-        self.metric.eq(&other.metric)
+    fn total_cmp(&self, other: &Self) -> Ordering {
+        self.metric.total_cmp(&other.metric)
     }
 }
 
-impl<Value: KdValue, Metric: KdValueMetric<Value>> PartialOrd<Self> for NearValue<Value, Metric> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<Value: KdValue, Metric: KdValueMetric<Value>> Ord for NearValue<Value, Metric> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.metric.cmp(&other.metric)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum VecOrHeap<T: Ord> {
     Vec(Vec<T>),
     Heap(BinaryHeap<T>),
@@ -123,7 +113,7 @@ where
     Metric: KdValueMetric<Value>,
 {
     target: Target,
-    heap: VecOrHeap<NearValue<Value, Metric>>,
+    heap: VecOrHeap<ByTotalOrd<NearValue<Value, Metric>>>,
 }
 
 impl<Target, Value, Metric, const K: usize> NearestK<Target, Value, Metric, K>
@@ -143,11 +133,14 @@ where
     pub fn into_nearest(self) -> Vec<NearValue<Value, Metric>> {
         match self.heap {
             VecOrHeap::Vec(mut vec) => {
-                vec.sort_by(|a, b| a.metric.cmp(&b.metric));
+                vec.sort();
                 vec
             }
             VecOrHeap::Heap(heap) => heap.into_sorted_vec(),
         }
+        .into_iter()
+        .map(|bto| bto.0)
+        .collect()
     }
 
     pub fn into_nearest_unsorted(self) -> Vec<NearValue<Value, Metric>> {
@@ -155,6 +148,9 @@ where
             VecOrHeap::Vec(vec) => vec,
             VecOrHeap::Heap(heap) => heap.into_vec(),
         }
+        .into_iter()
+        .map(|bto| bto.0)
+        .collect()
     }
 }
 
@@ -170,10 +166,10 @@ where
         let this_distance = Metric::distance(self.target.borrow(), val);
         match self.heap {
             VecOrHeap::Vec(ref mut vec) => {
-                vec.push(NearValue {
+                vec.push(ByTotalOrd(NearValue {
                     metric: this_distance,
                     value: val.clone(),
-                });
+                }));
                 // Heapify when we visit the kth value
                 if vec.len() == K {
                     self.heap = VecOrHeap::Heap(BinaryHeap::from(mem::take(vec)))
@@ -184,13 +180,13 @@ where
                 // SAFETY: we never have an empty heap; we only heapify when we reach K items, and
                 // K is asserted to be greater than zero.
                 let head = unsafe { heap.peek_mut().unwrap_unchecked() };
-                if this_distance < head.metric {
+                if this_distance.total_cmp(&head.0.metric).is_lt() {
                     let satiated = this_distance.is_zero();
                     PeekMut::pop(head);
-                    heap.push(NearValue {
+                    heap.push(ByTotalOrd(NearValue {
                         metric: this_distance,
                         value: val.clone(),
-                    });
+                    }));
                     if satiated {
                         return Err(StopSearch); // We've found K values that cannot be closer.
                     }
@@ -208,13 +204,14 @@ where
         let this = _this_held.borrow();
         let visiting = plane.borrow();
         SearchChildren(
-            this.cmp(visiting),
+            this.total_cmp(visiting),
             match self.heap {
                 VecOrHeap::Vec(ref vec) => Both,
                 VecOrHeap::Heap(ref heap) => {
                     // SAFETY: we never have an empty heap.
                     if Metric::axial_distance(this, visiting, dim)
-                        < unsafe { heap.peek().unwrap_unchecked() }.metric
+                        .total_cmp(&unsafe { heap.peek().unwrap_unchecked() }.0.metric)
+                        .is_lt()
                     {
                         // Current Kth-best distance is greater than the distance to the plane, so
                         // we might find closer nodes on the other side of it.
@@ -277,7 +274,7 @@ where
 {
     fn visit(&mut self, val: &Value) -> Result<(), StopSearch> {
         let this_distance = Metric::distance(self.target, val);
-        if this_distance < self.best_distance {
+        if this_distance.total_cmp(&self.best_distance).is_lt() {
             self.best_distance = this_distance;
             self.best.replace(val.clone());
             if self.best_distance.is_zero() {
@@ -295,8 +292,11 @@ where
         let this = _this_held.borrow();
         let visiting = plane.borrow();
         SearchChildren(
-            this.cmp(visiting),
-            if Metric::axial_distance(this, visiting, dim) < self.best_distance {
+            this.total_cmp(visiting),
+            if Metric::axial_distance(this, visiting, dim)
+                .total_cmp(&self.best_distance)
+                .is_lt()
+            {
                 Both
             } else {
                 Only

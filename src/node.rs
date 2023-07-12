@@ -14,7 +14,7 @@ use crate::node::StatUpdate::{NoChange, Updated};
 use crate::search::KdSearchGuide::{SearchChildren, Skip};
 use crate::search::OnlyOrBoth::{Both, Only};
 use crate::search::{KdSearchable, KdSearcher, StopSearch};
-use crate::value::{CycleDim, KdValue};
+use crate::value::{CycleDim, KdValue, TotalOrd};
 
 pub trait TreeHeightBound: Default + Copy {
     /// Entry point to validate that the type does not place an impossible constraint on the tree's
@@ -289,7 +289,7 @@ where
                 order_stat::kth_by(this_subtree, pivot_in_subtree, |a, b| {
                     let (a_val, b_val) = (a.value(), b.value());
                     (a_val.get_dimension(dim).borrow(), a_val)
-                        .cmp(&(b_val.get_dimension(dim).borrow(), b_val))
+                        .total_cmp(&(b_val.get_dimension(dim).borrow(), b_val))
                 });
                 begin + pivot_in_subtree
             };
@@ -542,7 +542,7 @@ where
         R: InsertEqualResolution,
     {
         let compared = (ins.value().get_dimension(dim).borrow(), ins.value())
-            .cmp(&(self.discriminant(dim).borrow(), self.value()));
+            .total_cmp(&(self.discriminant(dim).borrow(), self.value()));
         let go_left = match (compared, R::METHOD) {
             (Less, _) => true,
             (Greater, _) => false,
@@ -724,7 +724,7 @@ where
         let compared = val
             .get_dimension(dim)
             .borrow()
-            .cmp(self.discriminant(dim).borrow());
+            .total_cmp(self.discriminant(dim).borrow());
         let go_left = match compared {
             Less => true,
             Greater => false,
@@ -1000,10 +1000,16 @@ impl<D> Default for DimensionBound<D> {
 }
 
 #[cfg(feature = "full_validation")]
-impl<D: PartialOrd> DimensionBound<D> {
+impl<D: TotalOrd> DimensionBound<D> {
     fn assert_contains(&self, v: &D) {
-        assert!(self.lower.as_ref().map_or(true, |low| low <= v));
-        assert!(self.upper.as_ref().map_or(true, |high| v <= high));
+        assert!(self
+            .lower
+            .as_ref()
+            .map_or(true, |low| low.total_cmp(v).is_le()));
+        assert!(self
+            .upper
+            .as_ref()
+            .map_or(true, |high| v.total_cmp(high).is_le()));
     }
 }
 
