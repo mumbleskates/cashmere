@@ -1,9 +1,13 @@
 [package]
 name = "cashmere"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Spatial search trees with a focus on online mutability, speed, performance guarantees, and flexibility"
+license = "MIT"
+keywords = ["nearest-neighbor", "knn", "kd-tree", "kd", "kdtree"]
+categories = ["algorithms", "data-structures"]
+readme = "README.md"
 
 [dependencies]
 num-traits = "0.2.15"
