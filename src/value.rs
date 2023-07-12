@@ -43,7 +43,7 @@ impl TotalOrd for f64 {
 }
 
 macro_rules! define_total_ord {
-    ($T:ident) => {
+    ($T:ty) => {
         impl TotalOrd for $T {
             fn total_eq(&self, other: &Self) -> bool {
                 self == other
@@ -70,6 +70,10 @@ define_total_ord!(char);
 define_total_ord!(bool);
 
 define_total_ord!(str);
+
+define_total_ord!(std::time::Duration);
+define_total_ord!(std::time::Instant);
+define_total_ord!(std::time::SystemTime);
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug)]
