@@ -950,6 +950,7 @@ impl<'a, Node: BinaryNode> Iterator for ViewingBinaryTreeIter<'a, Node> {
     }
 }
 
+#[cfg(feature = "full_validation")]
 impl<'a, Node> ViewingBinaryTreeIter<'a, Node>
 where
     Node: BinaryNode + Ownable,
