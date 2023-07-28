@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use std::mem::swap;
 use std::ops::{Deref, DerefMut};
 use std::ptr::null_mut;
+use aliasable::boxed::AliasableBox;
 
 use crate::node::ScapegoatChangeOutcome::{Balanced, Rebuilding};
 use crate::node::ScapegoatPop::{Popped, RemoveThis};
@@ -335,6 +336,25 @@ impl<V, Node> KdInsertable<Node> for Box<Node>
 where
     V: KdValue,
     Node: MutableKdNode<Ownership = Box<Node>, Value = V>,
+{
+    fn value(&self) -> &V {
+        <Node as Value>::value(self)
+    }
+
+    fn swap_value_with(&mut self, _receiving_node: *mut Node, val: &mut V) {
+        swap(self.value_mut(), val)
+    }
+
+    fn node(mut self, dim: usize) -> Self {
+        self.set_dim(dim);
+        self
+    }
+}
+
+impl<V, Node> KdInsertable<Node> for AliasableBox<Node>
+where
+    V: KdValue,
+    Node: MutableKdNode<Ownership = AliasableBox<Node>, Value = V>,
 {
     fn value(&self) -> &V {
         <Node as Value>::value(self)
@@ -1049,24 +1069,24 @@ fn impl_scapegoat_node_validation<Node>(
 
 #[derive(Debug)]
 pub struct KdBoxNodeParent<V: KdValue, Stat: ValueStatistic<V>> {
-    left: Option<Box<Self>>,
-    right: Option<Box<Self>>,
+    left: Option<AliasableBox<Self>>,
+    right: Option<AliasableBox<Self>>,
     parent: *mut Self,
     value: V,
     mid: V::Dimension,
     stat: Stat,
 }
 
-impl<V: KdValue, Stat: ValueStatistic<V>> Consumable for Box<KdBoxNodeParent<V, Stat>> {
+impl<V: KdValue, Stat: ValueStatistic<V>> Consumable for AliasableBox<KdBoxNodeParent<V, Stat>> {
     type Value = V;
 
     fn consume(self) -> V {
-        self.value
+        AliasableBox::into_unique(self).value
     }
 }
 
 impl<V: KdValue, Stat: ValueStatistic<V>> Ownable for KdBoxNodeParent<V, Stat> {
-    type Ownership = Box<Self>;
+    type Ownership = AliasableBox<Self>;
 }
 
 pub struct Takeable<'a, T: Ownable> {
@@ -1111,7 +1131,7 @@ where
     V: 'a + KdValue,
     Stat: 'a + ValueStatistic<V>,
 {
-    opt: &'a mut Option<Box<KdBoxNodeParent<V, Stat>>>,
+    opt: &'a mut Option<AliasableBox<KdBoxNodeParent<V, Stat>>>,
     owner: *mut KdBoxNodeParent<V, Stat>,
 }
 
@@ -1120,7 +1140,7 @@ where
     V: 'a + KdValue,
     Stat: 'a + ValueStatistic<V> + Height,
 {
-    type Item = Box<KdBoxNodeParent<V, Stat>>;
+    type Item = AliasableBox<KdBoxNodeParent<V, Stat>>;
     type IntoIter = ConsumingBinaryTreeIter<KdBoxNodeParent<V, Stat>>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -1165,17 +1185,17 @@ where
 
     fn replace(
         &mut self,
-        mut with: Box<KdBoxNodeParent<V, Stat>>,
-    ) -> Option<Box<KdBoxNodeParent<V, Stat>>> {
+        mut with: AliasableBox<KdBoxNodeParent<V, Stat>>,
+    ) -> Option<AliasableBox<KdBoxNodeParent<V, Stat>>> {
         with.parent = self.owner;
         self.opt.replace(with)
     }
 
-    fn take(&mut self) -> Option<Box<KdBoxNodeParent<V, Stat>>> {
+    fn take(&mut self) -> Option<AliasableBox<KdBoxNodeParent<V, Stat>>> {
         self.opt.take()
     }
 
-    fn into_owned(self) -> Option<Box<KdBoxNodeParent<V, Stat>>> {
+    fn into_owned(self) -> Option<AliasableBox<KdBoxNodeParent<V, Stat>>> {
         self.opt.take()
     }
 }
@@ -1352,16 +1372,16 @@ where
     where
         Self: 'a;
 
-    fn new(value: V, dim: usize) -> Box<Self> {
+    fn new(value: V, dim: usize) -> Self::Ownership {
         let mid = value.get_dimension(dim).borrow().clone();
-        Box::new(Self {
+        AliasableBox::from_unique(Box::new(Self {
             left: None,
             right: None,
             parent: null_mut(),
             value,
             mid,
             stat: Default::default(),
-        })
+        }))
     }
 
     fn discriminant(&self, _dim: usize) -> &V::Dimension {
