@@ -1,3 +1,4 @@
+use aliasable::boxed::AliasableBox;
 use std::borrow::Borrow;
 use std::cmp::max;
 use std::cmp::Ordering::{Equal, Greater, Less};
@@ -5,7 +6,6 @@ use std::fmt::Debug;
 use std::mem::swap;
 use std::ops::{Deref, DerefMut};
 use std::ptr::null_mut;
-use aliasable::boxed::AliasableBox;
 
 use crate::node::ScapegoatChangeOutcome::{Balanced, Rebuilding};
 use crate::node::ScapegoatPop::{Popped, RemoveThis};
@@ -463,11 +463,15 @@ where
         Balance: TreeHeightBound,
         Self::Ownership: KdInsertable<Self>,
     {
-        let Some(mut root) = tree.get() else { return; };
+        let Some(mut root) = tree.get() else {
+            return;
+        };
         if root.stat().height() <= max_height {
             return;
         }
-        let Rebuilding(mut collection) = root.rebuild_deepest_leaf(balance, 0) else { return; };
+        let Rebuilding(mut collection) = root.rebuild_deepest_leaf(balance, 0) else {
+            return;
+        };
         collection.push(root.into_owned());
         // SAFETY: We trivially have a non-empty collection because we just pushed the root into it.
         tree.replace(unsafe { Self::must_build_from(collection, 0) });
@@ -488,7 +492,9 @@ where
     where
         Vcmp: KdValue<Dimension = <Self::Value as KdValue>::Dimension> + PartialOrd<Self::Value>,
     {
-        let Some(mut root) = tree.get() else { return None };
+        let Some(mut root) = tree.get() else {
+            return None;
+        };
         root.remove_value(val, 0).map(|pop| match pop {
             RemoveThis => root.into_owned(),
             Popped(popped, _) => popped,
@@ -774,7 +780,9 @@ where
         } else {
             self.right_child()
         };
-        let Some(mut child) = descend_into.get() else { return None };
+        let Some(mut child) = descend_into.get() else {
+            return None;
+        };
         match child.remove_value(val, Self::Value::next_dim(dim)) {
             None => None,
             Some(RemoveThis) => {
