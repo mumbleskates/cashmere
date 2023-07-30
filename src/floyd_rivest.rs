@@ -47,10 +47,10 @@ where
         // need to cancel the borrow (but the assertion above ensures this doesn't alias)
         let t = &array[t_idx] as *const _;
         unsafe {
-            while cmp(&*array.get_unchecked(i), &*t) == Less {
+            while cmp(array.get_unchecked(i), &*t) == Less {
                 i += 1
             }
-            while cmp(&*array.get_unchecked(j), &*t) == Greater {
+            while cmp(array.get_unchecked(j), &*t) == Greater {
                 j -= 1
             }
         }
@@ -69,10 +69,10 @@ where
                     ptr::swap(array.get_unchecked_mut(i), array.get_unchecked_mut(j));
                     i += 1;
                     j -= 1;
-                    while cmp(&*array.get_unchecked(i), &*t) == Less {
+                    while cmp(array.get_unchecked(i), &*t) == Less {
                         i += 1
                     }
-                    while cmp(&*array.get_unchecked(j), &*t) == Greater {
+                    while cmp(array.get_unchecked(j), &*t) == Greater {
                         j -= 1
                     }
                 }
