@@ -1,3 +1,5 @@
+// Borrowed and modified from the order-stat crate, (c) 2014 Huon Wilson, MIT licensed
+
 use std::cmp::Ordering::{self, Greater, Less};
 use std::{cmp, ptr};
 
