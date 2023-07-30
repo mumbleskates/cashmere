@@ -44,13 +44,17 @@ where
             left
         };
 
-        // need to cancel the borrow (but the assertion above ensures this doesn't alias)
-        let t = &array[t_idx] as *const _;
+        // Need to do this without borrowing (but the assertion above ensures this doesn't alias)
+        let arr_ptr = array.as_mut_ptr();
+        let t: *const T = unsafe { arr_ptr.add(t_idx) };
         unsafe {
-            while cmp(array.get_unchecked(i), &*t) == Less {
+            // This code has been modified to use pointer addition rather than
+            // `array.get_unchecked_mut(x)` as the latter causes a dereference of `t` to alias with
+            // the mutable borrow of `&mut array` that requires.
+            while cmp(&*arr_ptr.add(i), &*t) == Less {
                 i += 1
             }
-            while cmp(array.get_unchecked(j), &*t) == Greater {
+            while cmp(&*arr_ptr.add(j), &*t) == Greater {
                 j -= 1
             }
         }
@@ -66,13 +70,13 @@ where
             // at the moment (2015-04-25).
             unsafe {
                 while i < j {
-                    ptr::swap(array.get_unchecked_mut(i), array.get_unchecked_mut(j));
+                    ptr::swap(arr_ptr.add(i), arr_ptr.add(j));
                     i += 1;
                     j -= 1;
-                    while cmp(array.get_unchecked(i), &*t) == Less {
+                    while cmp(&*arr_ptr.add(i), &*t) == Less {
                         i += 1
                     }
-                    while cmp(array.get_unchecked(j), &*t) == Greater {
+                    while cmp(&*arr_ptr.add(j), &*t) == Greater {
                         j -= 1
                     }
                 }
