@@ -51,7 +51,8 @@ where
         // `array.get_unchecked_mut(x)` as the latter causes `t` to alias with the `&mut array`
         // borrow that requires.
         let arr_ptr = array.as_mut_ptr();
-        let t = &array[t_idx];
+        // We can be extra sure that we don't borrow `array` here.
+        let t = unsafe { &*arr_ptr.add(t_idx) };
         unsafe {
             while cmp(&*arr_ptr.add(i), t) == Less {
                 i += 1
