@@ -824,20 +824,16 @@ where
                 // SAFETY: We can destroy and replace our mutable reference with that of its
                 // parent here, as it is the only extant reference into the tree.
                 current = unsafe { &mut *current.parent() };
-                let [mut left_child, mut right_child] = current.children();
-                let popped_target = match left_child.get() {
-                    Some(child) => {
+                let popped_target = 'find_popped: {
+                    let [mut left_child, mut right_child] = current.children();
+                    if let Some(child) = left_child.get() {
                         if child.deref() as *const Node == node {
-                            child.into_owned()
-                        } else {
-                            // SAFETY: the left child is not the target node, so the right must be.
-                            unsafe { right_child.get_unchecked() }.into_owned()
+                            break 'find_popped child.into_owned();
                         }
                     }
                     // SAFETY: the left child is not the target node, so the right must be.
-                    None => unsafe { right_child.get_unchecked() }.into_owned(),
+                    break 'find_popped unsafe { right_child.get_unchecked() }.into_owned();
                 };
-                drop((left_child, right_child));
                 // We just removed a child of this node; recompute its stats.
                 *current.stat_mut() = current.make_stat();
                 popped_target
@@ -855,15 +851,13 @@ where
             }
         };
         // Fix stats of ancestors traveling up the tree
-        let mut updating = Updated;
-        while let Updated = updating {
-            if current.parent().is_null() {
-                break; // reached the root
-            }
+        while !current.parent().is_null() {
             // SAFETY: We can destroy and replace our mutable reference with that of its
             // parent here, as it is the only extant reference into the tree.
             current = unsafe { &mut *current.parent() };
-            updating = current.update_stat();
+            if let NoChange = current.update_stat() {
+                break; // done updating stats
+            }
         }
         Some(popped)
     }
