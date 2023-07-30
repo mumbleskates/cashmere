@@ -48,7 +48,7 @@ where
         let arr_ptr = array.as_mut_ptr();
         let t: *const T = unsafe { arr_ptr.add(t_idx) };
         unsafe {
-            // This code has been modified to use pointer addition rather than
+            // This code has been modified throughout to use pointer addition rather than
             // `array.get_unchecked_mut(x)` as the latter causes a dereference of `t` to alias with
             // the mutable borrow of `&mut array` that requires.
             while cmp(&*arr_ptr.add(i), &*t) == Less {
@@ -67,7 +67,7 @@ where
             // FIXME: this unsafe code *should* be unnecessary: the
             // assertions above mean that LLVM could theoretically
             // optimise out the bounds checks, but it doesn't seem to
-            // at the moment (2015-04-25).
+            // at the moment (it still does not, 2023-07-29).
             unsafe {
                 while i < j {
                     ptr::swap(arr_ptr.add(i), arr_ptr.add(j));
