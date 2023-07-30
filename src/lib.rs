@@ -21,6 +21,7 @@ use crate::types::CountedIter;
 pub use crate::types::{Ratio, RatioT};
 use crate::value::{KdValue, KdValuePlus, ValueStatisticPlus};
 
+mod floyd_rivest;
 mod node;
 pub mod search;
 pub(crate) mod types;

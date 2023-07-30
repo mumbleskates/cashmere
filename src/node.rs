@@ -14,7 +14,7 @@ use crate::search::KdSearchGuide::{SearchChildren, Skip};
 use crate::search::OnlyOrBoth::{Both, Only};
 use crate::search::{KdSearchable, KdSearcher, StopSearch};
 use crate::value::{CycleDim, KdValue, TotalOrd};
-use crate::RatioT;
+use crate::{floyd_rivest, RatioT};
 
 pub trait TreeHeightBound: Default + Copy {
     /// Entry point to validate that the type does not place an impossible constraint on the tree's
@@ -286,7 +286,7 @@ where
                 // that we bias left-heavy (including that all freshly built nodes with only one child
                 // have only a left child).
                 let pivot_in_subtree = this_subtree.len() / 2;
-                order_stat::kth_by(this_subtree, pivot_in_subtree, |a, b| {
+                floyd_rivest::select(this_subtree, pivot_in_subtree, |a, b| {
                     let (a_val, b_val) = (a.value(), b.value());
                     (a_val.get_dimension(dim).borrow(), a_val)
                         .total_cmp(&(b_val.get_dimension(dim).borrow(), b_val))
