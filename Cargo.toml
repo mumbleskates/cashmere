@@ -11,7 +11,7 @@ categories = ["algorithms", "data-structures"]
 readme = "README.md"
 
 [dependencies]
-num-traits = "0.2.15"
+num-traits = "0.2.17"
 
 [features]
 full_validation = []
