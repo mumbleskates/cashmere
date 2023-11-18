@@ -1,5 +1,3 @@
-#![deny(unsafe_op_in_unsafe_fn)]
-
 use std::borrow::Borrow;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{hash_map, HashMap};
