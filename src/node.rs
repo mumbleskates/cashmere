@@ -139,6 +139,7 @@ pub trait Statistic {
     fn stat_mut(&mut self) -> &mut Self::Stat;
 }
 
+#[derive(PartialEq, Eq)]
 pub enum StatUpdate {
     NoChange,
     Updated,
@@ -793,7 +794,7 @@ where
         // SAFETY: We can enter the tree mutably here as this function's contract includes that no
         // other references into any node in the tree already exist.
         let mut current: &mut Self = unsafe { &mut *node };
-        let popped = match current.pop_deepest_leaf() {
+        let (popped, mut stat_updated) = match current.pop_deepest_leaf() {
             RemoveThis => {
                 if current.parent().is_null() {
                     // The removal target is both the head of the tree and a leaf. Ownership of the
@@ -816,30 +817,28 @@ where
                     break 'find_popped unsafe { right_child.get_unchecked() }.into_owned();
                 };
                 // We just removed a child of this node; recompute its stats.
-                *current.stat_mut() = current.make_stat();
-                popped_target
+                (popped_target, current.update_stat())
             }
             Popped(mut popped, child_stats_updated) => {
                 // Update the target node (current)'s stats if its child node's stats were updated
                 if let Updated = child_stats_updated {
+                    // We only need to update this node's stats if the child's stats changed, since
+                    // stats do not bear any relation to the value in the same node.
                     *current.stat_mut() = current.make_stat();
                 }
                 // Swap the value targeted for removal into the popped node
                 swap(popped.value_mut(), current.value_mut());
                 // Update stats of the ancestors, up to the root. Because current's value changed,
                 // we always update at least the stats of the parent node.
-                popped
+                (popped, Updated)
             }
         };
-        // Since we've swapped the popped node's value into current, its ancestors' stats have
-        // changed. Update the stats of its ancestors traveling up the tree.
-        while !current.parent().is_null() {
+        // Fix stats of ancestors traveling up the tree
+        while stat_updated == Updated && !current.parent().is_null() {
             // SAFETY: We can destroy and replace our mutable reference with that of its
             // parent here, as it is the only extant reference into the tree.
             current = unsafe { &mut *current.parent() };
-            if let NoChange = current.update_stat() {
-                break; // done updating stats
-            }
+            stat_updated = current.update_stat();
         }
         Some(popped)
     }
