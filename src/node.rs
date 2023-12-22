@@ -831,7 +831,8 @@ where
                 popped
             }
         };
-        // Fix stats of ancestors traveling up the tree
+        // Since we've swapped the popped node's value into current, its ancestors' stats have
+        // changed. Update the stats of its ancestors traveling up the tree.
         while !current.parent().is_null() {
             // SAFETY: We can destroy and replace our mutable reference with that of its
             // parent here, as it is the only extant reference into the tree.
