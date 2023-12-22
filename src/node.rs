@@ -906,8 +906,8 @@ impl<V, Stat: ValueStatistic<V>> ValueStatistic<V> for WithHeight<Stat> {
     {
         let stat_iter = stats.into_iter();
         Self {
-            stat: Stat::combine(values, stat_iter.clone().map(|s| &s.stat)),
-            height: stat_iter.fold(0, |most, s| max(most, s.height + 1)),
+            stat: Stat::combine(values, stat_iter.clone().map(|s: &Self| &s.stat)),
+            height: stat_iter.fold(0, |most: u32, s: &Self| max(most, s.height + 1)),
         }
     }
 }
