@@ -166,184 +166,39 @@ impl<V: Clone + TotalOrd, const N: usize> KdValue for [V; N] {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Axis2<A, B> {
-    A(A),
-    B(B),
+macro_rules! axis_type {
+    ($ty:ident $(, $generics:ident)+) => {
+        #[derive(Clone, Debug)]
+        pub enum $ty<$($generics),+> {
+            $($generics($generics),)+
+        }
+
+        impl<$($generics),+> TotalOrd for $ty<$($generics),+>
+        where
+            $($generics: TotalOrd,)+
+        {
+            fn total_eq(&self, other: &Self) -> bool {
+                match (self, other) {
+                    $(($ty::$generics(s), $ty::$generics(o)) => s.total_eq(o),)+
+                    _ => false,
+                }
+            }
+
+            fn total_cmp(&self, other: &Self) -> Ordering {
+                match (self, other) {
+                    $(($ty::$generics(s), $ty::$generics(o)) => s.total_cmp(o),)+
+                    _ => panic!("compared different dims"),
+                }
+            }
+        }
+    };
 }
 
-impl<A, B> TotalOrd for Axis2<A, B>
-where
-    A: TotalOrd,
-    B: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Axis2::A(s), Axis2::A(o)) => s.total_eq(o),
-            (Axis2::B(s), Axis2::B(o)) => s.total_eq(o),
-            _ => false,
-        }
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Axis2::A(s), Axis2::A(o)) => s.total_cmp(o),
-            (Axis2::B(s), Axis2::B(o)) => s.total_cmp(o),
-            _ => panic!("compared different dims"),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Axis3<A, B, C> {
-    A(A),
-    B(B),
-    C(C),
-}
-
-impl<A, B, C> TotalOrd for Axis3<A, B, C>
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Axis3::A(s), Axis3::A(o)) => s.total_eq(o),
-            (Axis3::B(s), Axis3::B(o)) => s.total_eq(o),
-            (Axis3::C(s), Axis3::C(o)) => s.total_eq(o),
-            _ => false,
-        }
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Axis3::A(s), Axis3::A(o)) => s.total_cmp(o),
-            (Axis3::B(s), Axis3::B(o)) => s.total_cmp(o),
-            (Axis3::C(s), Axis3::C(o)) => s.total_cmp(o),
-            _ => panic!("compared different dims"),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Axis4<A, B, C, D> {
-    A(A),
-    B(B),
-    C(C),
-    D(D),
-}
-
-impl<A, B, C, D> TotalOrd for Axis4<A, B, C, D>
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-    D: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Axis4::A(s), Axis4::A(o)) => s.total_eq(o),
-            (Axis4::B(s), Axis4::B(o)) => s.total_eq(o),
-            (Axis4::C(s), Axis4::C(o)) => s.total_eq(o),
-            (Axis4::D(s), Axis4::D(o)) => s.total_eq(o),
-            _ => false,
-        }
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Axis4::A(s), Axis4::A(o)) => s.total_cmp(o),
-            (Axis4::B(s), Axis4::B(o)) => s.total_cmp(o),
-            (Axis4::C(s), Axis4::C(o)) => s.total_cmp(o),
-            (Axis4::D(s), Axis4::D(o)) => s.total_cmp(o),
-            _ => panic!("compared different dims"),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Axis5<A, B, C, D, E> {
-    A(A),
-    B(B),
-    C(C),
-    D(D),
-    E(E),
-}
-impl<A, B, C, D, E> TotalOrd for Axis5<A, B, C, D, E>
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-    D: TotalOrd,
-    E: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Axis5::A(s), Axis5::A(o)) => s.total_eq(o),
-            (Axis5::B(s), Axis5::B(o)) => s.total_eq(o),
-            (Axis5::C(s), Axis5::C(o)) => s.total_eq(o),
-            (Axis5::D(s), Axis5::D(o)) => s.total_eq(o),
-            (Axis5::E(s), Axis5::E(o)) => s.total_eq(o),
-            _ => false,
-        }
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Axis5::A(s), Axis5::A(o)) => s.total_cmp(o),
-            (Axis5::B(s), Axis5::B(o)) => s.total_cmp(o),
-            (Axis5::C(s), Axis5::C(o)) => s.total_cmp(o),
-            (Axis5::D(s), Axis5::D(o)) => s.total_cmp(o),
-            (Axis5::E(s), Axis5::E(o)) => s.total_cmp(o),
-            _ => panic!("compared different dims"),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Axis6<A, B, C, D, E, F> {
-    A(A),
-    B(B),
-    C(C),
-    D(D),
-    E(E),
-    F(F),
-}
-
-impl<A, B, C, D, E, F> TotalOrd for Axis6<A, B, C, D, E, F>
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-    D: TotalOrd,
-    E: TotalOrd,
-    F: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Axis6::A(s), Axis6::A(o)) => s.total_eq(o),
-            (Axis6::B(s), Axis6::B(o)) => s.total_eq(o),
-            (Axis6::C(s), Axis6::C(o)) => s.total_eq(o),
-            (Axis6::D(s), Axis6::D(o)) => s.total_eq(o),
-            (Axis6::E(s), Axis6::E(o)) => s.total_eq(o),
-            (Axis6::F(s), Axis6::F(o)) => s.total_eq(o),
-            _ => false,
-        }
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Axis6::A(s), Axis6::A(o)) => s.total_cmp(o),
-            (Axis6::B(s), Axis6::B(o)) => s.total_cmp(o),
-            (Axis6::C(s), Axis6::C(o)) => s.total_cmp(o),
-            (Axis6::D(s), Axis6::D(o)) => s.total_cmp(o),
-            (Axis6::E(s), Axis6::E(o)) => s.total_cmp(o),
-            (Axis6::F(s), Axis6::F(o)) => s.total_cmp(o),
-            _ => panic!("compared different dims"),
-        }
-    }
-}
+axis_type!(Axis2, A, B);
+axis_type!(Axis3, A, B, C);
+axis_type!(Axis4, A, B, C, D);
+axis_type!(Axis5, A, B, C, D, E);
+axis_type!(Axis6, A, B, C, D, E, F);
 
 impl<A, B> TotalOrd for (A, B)
 where
