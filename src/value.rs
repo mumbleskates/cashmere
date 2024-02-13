@@ -194,248 +194,54 @@ macro_rules! axis_type {
     };
 }
 
+macro_rules! kd_tuple {
+    ($axis_ty:ident, $dims:literal, ($($generics:ident),+), ($($numbers:tt),+)) => {
+        impl<$($generics),+> TotalOrd for ($($generics),+)
+        where
+            $($generics: TotalOrd,)+
+        {
+            fn total_eq(&self, other: &Self) -> bool {
+                true $(&& self.$numbers.total_eq(&other.$numbers))+
+            }
+
+            fn total_cmp(&self, other: &Self) -> Ordering {
+                Ordering::Equal
+                    $(.then_with(|| self.$numbers.total_cmp(&other.$numbers)))+
+            }
+        }
+
+        impl<$($generics),+> KdValue for ($($generics),+)
+        where
+            $($generics: Clone + TotalOrd,)+
+        {
+            const DIMS: usize = $dims;
+            type Dimension = $axis_ty<$($generics),+>;
+            type ReturnedDimension<'a> = Self::Dimension
+            where
+                Self: 'a;
+
+            #[inline]
+            fn get_dimension(&self, dim: usize) -> Self::Dimension {
+                match dim {
+                    $($numbers => $axis_ty::$generics(self.$numbers.clone()),)+
+                    _ => panic!("invalid dimension"),
+                }
+            }
+        }
+    };
+}
+
 axis_type!(Axis2, A, B);
 axis_type!(Axis3, A, B, C);
 axis_type!(Axis4, A, B, C, D);
 axis_type!(Axis5, A, B, C, D, E);
 axis_type!(Axis6, A, B, C, D, E, F);
 
-impl<A, B> TotalOrd for (A, B)
-where
-    A: TotalOrd,
-    B: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        self.0.total_eq(&other.0) && self.1.total_eq(&other.1)
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.0
-            .total_cmp(&other.0)
-            .then_with(|| self.1.total_cmp(&other.1))
-    }
-}
-
-impl<A, B> KdValue for (A, B)
-where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-{
-    const DIMS: usize = 2;
-    type Dimension = Axis2<A, B>;
-    type ReturnedDimension<'a> = Self::Dimension
-    where
-        Self: 'a;
-
-    #[inline]
-    fn get_dimension(&self, dim: usize) -> Self::Dimension {
-        match dim {
-            0 => Axis2::A(self.0.clone()),
-            1 => Axis2::B(self.1.clone()),
-            _ => panic!("invalid dimension"),
-        }
-    }
-}
-
-impl<A, B, C> TotalOrd for (A, B, C)
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        self.0.total_eq(&other.0) && self.1.total_eq(&other.1) && self.2.total_eq(&other.2)
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.0
-            .total_cmp(&other.0)
-            .then_with(|| self.1.total_cmp(&other.1))
-            .then_with(|| self.2.total_cmp(&other.2))
-    }
-}
-
-impl<A, B, C> KdValue for (A, B, C)
-where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
-{
-    const DIMS: usize = 3;
-    type Dimension = Axis3<A, B, C>;
-    type ReturnedDimension<'a> = Self::Dimension
-    where
-        Self: 'a;
-
-    #[inline]
-    fn get_dimension(&self, dim: usize) -> Self::Dimension {
-        match dim {
-            0 => Axis3::A(self.0.clone()),
-            1 => Axis3::B(self.1.clone()),
-            2 => Axis3::C(self.2.clone()),
-            _ => panic!("invalid dimension"),
-        }
-    }
-}
-
-impl<A, B, C, D> TotalOrd for (A, B, C, D)
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-    D: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        self.0.total_eq(&other.0)
-            && self.1.total_eq(&other.1)
-            && self.2.total_eq(&other.2)
-            && self.3.total_eq(&other.3)
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.0
-            .total_cmp(&other.0)
-            .then_with(|| self.1.total_cmp(&other.1))
-            .then_with(|| self.2.total_cmp(&other.2))
-            .then_with(|| self.3.total_cmp(&other.3))
-    }
-}
-
-impl<A, B, C, D> KdValue for (A, B, C, D)
-where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
-    D: Clone + TotalOrd,
-{
-    const DIMS: usize = 4;
-    type Dimension = Axis4<A, B, C, D>;
-    type ReturnedDimension<'a> = Self::Dimension
-    where
-        Self: 'a;
-
-    #[inline]
-    fn get_dimension(&self, dim: usize) -> Self::Dimension {
-        match dim {
-            0 => Axis4::A(self.0.clone()),
-            1 => Axis4::B(self.1.clone()),
-            2 => Axis4::C(self.2.clone()),
-            3 => Axis4::D(self.3.clone()),
-            _ => panic!("invalid dimension"),
-        }
-    }
-}
-
-impl<A, B, C, D, E> TotalOrd for (A, B, C, D, E)
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-    D: TotalOrd,
-    E: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        self.0.total_eq(&other.0)
-            && self.1.total_eq(&other.1)
-            && self.2.total_eq(&other.2)
-            && self.3.total_eq(&other.3)
-            && self.4.total_eq(&other.4)
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.0
-            .total_cmp(&other.0)
-            .then_with(|| self.1.total_cmp(&other.1))
-            .then_with(|| self.2.total_cmp(&other.2))
-            .then_with(|| self.3.total_cmp(&other.3))
-            .then_with(|| self.4.total_cmp(&other.4))
-    }
-}
-
-impl<A, B, C, D, E> KdValue for (A, B, C, D, E)
-where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
-    D: Clone + TotalOrd,
-    E: Clone + TotalOrd,
-{
-    const DIMS: usize = 5;
-    type Dimension = Axis5<A, B, C, D, E>;
-    type ReturnedDimension<'a> = Self::Dimension
-    where
-        Self: 'a;
-
-    #[inline]
-    fn get_dimension(&self, dim: usize) -> Self::Dimension {
-        match dim {
-            0 => Axis5::A(self.0.clone()),
-            1 => Axis5::B(self.1.clone()),
-            2 => Axis5::C(self.2.clone()),
-            3 => Axis5::D(self.3.clone()),
-            4 => Axis5::E(self.4.clone()),
-            _ => panic!("invalid dimension"),
-        }
-    }
-}
-
-impl<A, B, C, D, E, F> TotalOrd for (A, B, C, D, E, F)
-where
-    A: TotalOrd,
-    B: TotalOrd,
-    C: TotalOrd,
-    D: TotalOrd,
-    E: TotalOrd,
-    F: TotalOrd,
-{
-    fn total_eq(&self, other: &Self) -> bool {
-        self.0.total_eq(&other.0)
-            && self.1.total_eq(&other.1)
-            && self.2.total_eq(&other.2)
-            && self.3.total_eq(&other.3)
-            && self.4.total_eq(&other.4)
-            && self.5.total_eq(&other.5)
-    }
-
-    fn total_cmp(&self, other: &Self) -> Ordering {
-        self.0
-            .total_cmp(&other.0)
-            .then_with(|| self.1.total_cmp(&other.1))
-            .then_with(|| self.2.total_cmp(&other.2))
-            .then_with(|| self.3.total_cmp(&other.3))
-            .then_with(|| self.4.total_cmp(&other.4))
-            .then_with(|| self.5.total_cmp(&other.5))
-    }
-}
-
-impl<A, B, C, D, E, F> KdValue for (A, B, C, D, E, F)
-where
-    A: Clone + TotalOrd,
-    B: Clone + TotalOrd,
-    C: Clone + TotalOrd,
-    D: Clone + TotalOrd,
-    E: Clone + TotalOrd,
-    F: Clone + TotalOrd,
-{
-    const DIMS: usize = 6;
-    type Dimension = Axis6<A, B, C, D, E, F>;
-    type ReturnedDimension<'a> = Self::Dimension
-    where
-        Self: 'a;
-
-    #[inline]
-    fn get_dimension(&self, dim: usize) -> Self::Dimension {
-        match dim {
-            0 => Axis6::A(self.0.clone()),
-            1 => Axis6::B(self.1.clone()),
-            2 => Axis6::C(self.2.clone()),
-            3 => Axis6::D(self.3.clone()),
-            4 => Axis6::E(self.4.clone()),
-            5 => Axis6::F(self.5.clone()),
-            _ => panic!("invalid dimension"),
-        }
-    }
-}
+kd_tuple!(Axis2, 2, (A, B), (0, 1));
+kd_tuple!(Axis3, 3, (A, B, C), (0, 1, 2));
+kd_tuple!(Axis4, 4, (A, B, C, D), (0, 1, 2, 3));
+kd_tuple!(Axis5, 5, (A, B, C, D, E), (0, 1, 2, 3, 4));
+kd_tuple!(Axis6, 6, (A, B, C, D, E, F), (0, 1, 2, 3, 4, 5));
 
 /// KdValue wrapper that attaches extra data which is ignored for purposes of equality and
 /// ordering.
