@@ -112,6 +112,7 @@ impl<T: TotalOrd> PartialEq for ByTotalOrd<T> {
     }
 }
 
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl<T: TotalOrd> PartialOrd for ByTotalOrd<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.0.total_cmp(&other.0))
