@@ -26,5 +26,8 @@ png = "0.17"
 rand = "0.8"
 sha2 = { version = "0.10", features = ["asm"] }
 
+[profile.release]
+lto = "thin"
+
 [features]
 full_validation = []
