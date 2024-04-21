@@ -142,21 +142,19 @@ pub trait ColorMap {
 #[derive(Parser)]
 #[command(name = "colordeposit")]
 struct Cli {
-    /// File to output PNG image to
+    /// File the output PNG image will be written to
     output: Option<PathBuf>,
     /// The color metric used to determine similar colors.
     #[arg(long)]
     color_metric: Option<ColorMetric>,
-    /// The order in which colors are added to the image.
-    /// Possible values are 'shuffle' for random, or some variation of 'ordered:+r+g+b',
-    /// 'ordered:-g+b-r', etc. for a specific ordering from highest to lowest
-    /// denomination. Components for specific orderings include r, g, b (SRGB
-    /// red, green, and blue channels), l, u, v (CIE LUV color space
-    /// coordinates), x, y, and z (CIE XYZ color space) and are each preceded
-    /// either by '+' (ascending) or '-' (descending). There can be up to three
-    /// such components; for example, 'ordered:-r+b' would be the equivalent of
-    /// all colors shuffled, then ordered by ascending blue value, then finally
-    /// ordered by descending red value (with green left randomized).
+    /// The order in which colors are added to the image. Possible values are 'shuffle' for random,
+    /// or some variation of +R+G+B', '-G+B-R', etc. for a specific ordering from highest to lowest
+    /// denomination. Components for specific orderings include R, G, B (SRGB red, green, and blue
+    /// channels), l, u, v (CIE LUV color space coordinates), x, y, and z (CIE XYZ color space) and
+    /// are each preceded either by '+' (ascending) or '-' (descending). There can be up to three
+    /// such components; for example, 'ordered:-R+B' would be the equivalent of all colors shuffled,
+    /// then ordered by ascending blue value, then finally ordered by descending red value (with
+    /// green left randomized).
     #[arg(long)]
     ordering: Option<Ordering>,
     /// Shuffling seed (any string value).

@@ -4,6 +4,24 @@
 
 Under development. Documentation may be lacking, bugs may exist.
 
+## Running the examples
+
+`cargo run --example colordeposit --release -- [options]`
+
+Some options to try (the variations are very numerous):
+
+    (no options)
+    --color_metric=rgb
+    --color_metric=xyz
+    --ordering=-G
+
+These take a long time:
+
+    --ordering=ordered:+R+G+B
+    --ordering=ordered:+B+G+R --color_metric=rgb
+    --ordering=ordered:-l
+    --ordering=ordered:-v
+
 ### Motivation
 
 Many libraries exist implementing *k*-dimensional spatial partitioning trees;
