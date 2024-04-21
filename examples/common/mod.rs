@@ -14,9 +14,7 @@ use rand::seq::SliceRandom;
 use rand::SeedableRng;
 use sha2::{Digest, Sha512};
 
-use crate::color::{LABColor, LUVColor, RGBColor, SRGBColor, XYZColor};
-use crate::ColorMetric::{Lab, Luv, Rgb, Srgb, Xyz};
-use crate::Direction::{Asc, Desc};
+use color::{LABColor, LUVColor, RGBColor, SRGBColor, XYZColor};
 
 mod color;
 
@@ -134,9 +132,6 @@ const SAMPLE_WEIGHTS: &[(Position, f32, bool)] = &[
 pub trait ColorMap {
     fn new() -> Self;
     fn len(&self) -> usize;
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
     fn insert(&mut self, key: u32, value: Color);
     fn nearest(&self, value: &Color) -> u32;
     fn remove(&mut self, key: u32);
@@ -182,12 +177,14 @@ enum ColorMetric {
     /// SRGB
     Srgb,
 }
+use ColorMetric::*;
 
 #[derive(Copy, Clone)]
 enum Direction {
     Asc,
     Desc,
 }
+use Direction::*;
 
 #[derive(Copy, Clone)]
 struct SortIndex {

@@ -78,6 +78,7 @@ pub trait Tree: IntoIterator<Item = <Self::Node as Ownable>::Ownership> {
     where
         Self: 'a;
 
+    #[cfg(feature = "full_validation")]
     fn validate(&self);
 
     fn as_ref(&self) -> Option<&Self::Node>;
@@ -1144,6 +1145,7 @@ where
     where
         Self: 'b;
 
+    #[cfg(feature = "full_validation")]
     fn validate(&self) {
         if let Some(child) = self.opt.as_ref() {
             assert_eq!(child.parent, self.owner)
@@ -1308,6 +1310,7 @@ where
     where
         Self: 'a;
 
+    #[cfg(feature = "full_validation")]
     fn validate(&self) {
         if let Some(root) = self.head.as_ref() {
             assert!(root.parent().is_null())
