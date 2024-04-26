@@ -376,8 +376,11 @@ where
     const FRONTIER: u32 = UNPLACED - 1;
     let mut output_buffer = vec![UNPLACED; field.len()];
 
+    let start_time = Instant::now();
     let log_frequency = Duration::from_millis(100);
-    let mut next_log = Instant::now() + log_frequency;
+    let mut last_log = start_time;
+    let mut last_log_progress = 0usize;
+    let mut next_log = last_log + log_frequency;
     let bar = ProgressBar::new(color_values.len() as u64)
         .with_style(
             ProgressStyle::with_template(
@@ -388,15 +391,19 @@ where
         )
         .with_prefix("placing")
         .with_finish(ProgressFinish::AndLeave);
-    let tick_bar = |i, frontier_size| {
+    let mut tick_bar = |now: Instant, i, frontier_size| {
+        let seconds_since_last_log = (now - last_log).as_nanos() as f32 / 1e9;
+        let rate = (i - last_log_progress) as f32 / seconds_since_last_log;
         bar.set_position(i as u64);
-        bar.set_message(format!("frontier size: {frontier_size}"));
+        bar.set_message(format!("{rate:.0} px/sec, frontier size {frontier_size}"));
         bar.tick();
+        last_log = now;
+        last_log_progress = i;
     };
     for (i, (_, placing_color)) in color_values.iter().enumerate() {
         let now = Instant::now();
         if now >= next_log {
-            tick_bar(i, frontier.len());
+            tick_bar(now, i, frontier.len());
             next_log = now + log_frequency;
         }
         let best_frontier_key = frontier.nearest(placing_color);
@@ -451,7 +458,11 @@ where
             frontier.fully_validate();
         }
     }
-    tick_bar(color_values.len(), frontier.len());
+    let finish_time = Instant::now();
+    bar.set_position(color_values.len() as u64);
+    let total_seconds = (finish_time - start_time).as_nanos() as f32 / 1e9;
+    let rate = color_values.len() as f32 / total_seconds;
+    bar.set_message(format!("average {rate:.0} px/sec"));
     bar.finish();
 
     // Remap output buffer back to srgb colors
