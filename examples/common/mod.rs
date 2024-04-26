@@ -8,6 +8,7 @@ use std::str::FromStr;
 
 use clap::{Parser, ValueEnum};
 use coarsetime::{Duration, Instant};
+use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 use num_traits::MulAddAssign;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
@@ -175,6 +176,7 @@ enum ColorMetric {
     /// SRGB
     Srgb,
 }
+
 use ColorMetric::*;
 
 #[derive(Copy, Clone)]
@@ -182,6 +184,7 @@ enum Direction {
     Asc,
     Desc,
 }
+
 use Direction::*;
 
 #[derive(Copy, Clone)]
@@ -230,8 +233,8 @@ impl FromStr for Ordering {
                     '-' => Desc,
                     _ => {
                         return Err(
-                        "each ordering term must start with '+' (ascending) or '-' (descending)",
-                    );
+                            "each ordering term must start with '+' (ascending) or '-' (descending)",
+                        );
                     }
                 },
             ))
@@ -373,22 +376,27 @@ where
     const FRONTIER: u32 = UNPLACED - 1;
     let mut output_buffer = vec![UNPLACED; field.len()];
 
-    let start = Instant::now();
-    println!("placing");
-    let log_frequency = Duration::from_millis(500);
-    let mut last_log = Instant::now();
-    let mut last_log_progress = 0usize;
-    let mut next_log = last_log + log_frequency;
+    let log_frequency = Duration::from_millis(150);
+    let mut next_log = Instant::now() + log_frequency;
+    let bar = ProgressBar::new(color_values.len() as u64)
+        .with_style(
+            ProgressStyle::with_template(
+                "{prefix} {wide_bar} {elapsed_precise}/{eta_precise} {percent_precise}% \
+                {msg}",
+            )
+            .unwrap(),
+        )
+        .with_prefix("placing")
+        .with_finish(ProgressFinish::AndLeave);
+    let tick_bar = |i, frontier_size| {
+        bar.set_position(i as u64);
+        bar.set_message(format!("frontier size: {frontier_size}"));
+        bar.tick();
+    };
     for (i, (_, placing_color)) in color_values.iter().enumerate() {
         let now = Instant::now();
         if now >= next_log {
-            let seconds_since_last_log = (now - last_log).as_nanos() as f32 / 1e9;
-            let progress_since_last_log = i - last_log_progress;
-            let rate = progress_since_last_log as f32 / seconds_since_last_log;
-            let frontier_size = frontier.len();
-            println!("placed {i} pixels; {rate} pixels/sec; frontier size: {frontier_size}");
-            last_log = now;
-            last_log_progress = i;
+            tick_bar(i, frontier.len());
             next_log = now + log_frequency;
         }
         let best_frontier_key = frontier.nearest(placing_color);
@@ -443,11 +451,8 @@ where
             frontier.fully_validate();
         }
     }
-    {
-        let elapsed = (Instant::now() - start).as_nanos() as f32 / 1e9;
-        let average_speed = field.len() as f32 / elapsed;
-        println!("done! total {elapsed} seconds elapsed, average {average_speed} pixels/sec");
-    }
+    tick_bar(color_values.len(), frontier.len());
+    bar.finish();
 
     // Remap output buffer back to srgb colors
     println!("saving...");

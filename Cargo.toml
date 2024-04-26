@@ -19,6 +19,7 @@ num-traits = "0.2"
 cashmere = { path = "../cashmere" }
 clap = { version = "4", features = ["derive", "env", "unicode"] }
 coarsetime = "0.1"
+indicatif = "0.17"
 kdtree = "0.7.0"
 kiddo = "4.2.0"
 num-traits = "0.2"
