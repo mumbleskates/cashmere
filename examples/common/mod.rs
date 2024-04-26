@@ -376,13 +376,13 @@ where
     const FRONTIER: u32 = UNPLACED - 1;
     let mut output_buffer = vec![UNPLACED; field.len()];
 
-    let log_frequency = Duration::from_millis(150);
+    let log_frequency = Duration::from_millis(100);
     let mut next_log = Instant::now() + log_frequency;
     let bar = ProgressBar::new(color_values.len() as u64)
         .with_style(
             ProgressStyle::with_template(
-                "{prefix} {wide_bar} {elapsed_precise}/{eta_precise} {percent_precise}% \
-                {msg}",
+                "{prefix} {wide_bar} {elapsed_precise}/{eta_precise} | {percent_precise}% \
+                | {msg}",
             )
             .unwrap(),
         )
