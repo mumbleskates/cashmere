@@ -391,19 +391,19 @@ where
         )
         .with_prefix("placing")
         .with_finish(ProgressFinish::AndLeave);
-    let mut tick_bar = |now: Instant, i, frontier_size| {
-        let seconds_since_last_log = (now - last_log).as_nanos() as f32 / 1e9;
-        let rate = (i - last_log_progress) as f32 / seconds_since_last_log;
-        bar.set_position(i as u64);
-        bar.set_message(format!("{rate:.0} px/sec, frontier size {frontier_size}"));
-        bar.tick();
-        last_log = now;
-        last_log_progress = i;
-    };
     for (i, (_, placing_color)) in color_values.iter().enumerate() {
         let now = Instant::now();
         if now >= next_log {
-            tick_bar(now, i, frontier.len());
+            let seconds_since_last_log = (now - last_log).as_nanos() as f32 / 1e9;
+            let rate = (i - last_log_progress) as f32 / seconds_since_last_log;
+            bar.set_position(i as u64);
+            bar.set_message(format!(
+                "{rate:.0} px/sec, frontier size {}",
+                frontier.len()
+            ));
+            bar.tick();
+            last_log = now;
+            last_log_progress = i;
             next_log = now + log_frequency;
         }
         let best_frontier_key = frontier.nearest(placing_color);
